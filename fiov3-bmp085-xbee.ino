@@ -9,97 +9,59 @@
 //Connecting pin 8 and 9 to TX and RX of USB serial device respectively.
 XBee xbee;
 
-void atSH(){
+void sendATSH(){
   const uint8_t ATSH[] = {'S','H'};
   AtCommandRequest atCommandRequest = AtCommandRequest(ATSH);
-  AtCommandResponse atCommandResponse = AtCommandResponse();
   xbee.send(atCommandRequest);
-  //Serial.print(" Sent \n");
-  if(xbee.readPacket(5000)){
-    //Serial.print(" Read \n");
-    if(xbee.getResponse().getApiId() == AT_COMMAND_RESPONSE) {
-      xbee.getResponse().getAtCommandResponse(atCommandResponse);
-      Serial.print((char)atCommandResponse.getCommand()[0]);
-      Serial.print((char)atCommandResponse.getCommand()[1]); 
-      Serial.print(' ');
-      for(int i=0; i< atCommandResponse.getValueLength(); ++i){
-        const unsigned char x = atCommandResponse.getValue()[i];
-        if(x < 0x10) Serial.print('0');
-        Serial.print((unsigned char)(atCommandResponse.getValue()[i]), HEX);
-      }//for
-    }
-    Serial.print('\n');
-  }
 }
 
-void atSL(){
+void sendATSL(){
   const uint8_t ATSL[] = {'S','L'};
   AtCommandRequest atCommandRequest = AtCommandRequest(ATSL);
-  AtCommandResponse atCommandResponse = AtCommandResponse();
   xbee.send(atCommandRequest);
-  //Serial.print(" Sent \n");
-  if(xbee.readPacket(5000)){
-    //Serial.print(" Read \n");
-    if(xbee.getResponse().getApiId() == AT_COMMAND_RESPONSE) {
-      xbee.getResponse().getAtCommandResponse(atCommandResponse);
-      Serial.print((char)atCommandResponse.getCommand()[0]);
-      Serial.print((char)atCommandResponse.getCommand()[1]); 
-      Serial.print(' ');
-      for(int i=0; i< atCommandResponse.getValueLength(); ++i){
-        const unsigned char x = atCommandResponse.getValue()[i];
-        if(x < 0x10) Serial.print('0');
-        Serial.print((unsigned char)(atCommandResponse.getValue()[i]), HEX);
-      }//for
-    }
-    Serial.print('\n');
-  }
 }
 
-void atNI(){
+void sendATNI(){
   const uint8_t ATNI[] = {'N','I'};
   AtCommandRequest atCommandRequest = AtCommandRequest(ATNI);
-  AtCommandResponse atCommandResponse = AtCommandResponse();
   xbee.send(atCommandRequest);
-  //Serial.print(" Sent \n");
+}
+
+void sendATNDPC1(){
+  const uint8_t ATND[] = {'N','D'};
+  const uint8_t PC1[] = {'P', 'C', '1'};
+  AtCommandRequest atCommandRequest = AtCommandRequest(ATND, PC1, 3);
+  //AtCommandRequest atCommandRequest = AtCommandRequest(ATND);
+  xbee.send(atCommandRequest);
+}
+
+bool getResponse(){
   if(xbee.readPacket(5000)){
     //Serial.print(" Read \n");
     if(xbee.getResponse().getApiId() == AT_COMMAND_RESPONSE) {
+      AtCommandResponse atCommandResponse = AtCommandResponse();
       xbee.getResponse().getAtCommandResponse(atCommandResponse);
-      Serial.print((char)atCommandResponse.getCommand()[0]);
-      Serial.print((char)atCommandResponse.getCommand()[1]); 
+      const char c0 = atCommandResponse.getCommand()[0];
+      const char c1 = atCommandResponse.getCommand()[1];
+      Serial.print(c0);
+      Serial.print(c1); 
       Serial.print(' ');
-      for(int i=0; i< atCommandResponse.getValueLength(); ++i){
-        const char x = atCommandResponse.getValue()[i];
-        Serial.print((char)(atCommandResponse.getValue()[i]));
-      }//for
-    }
+      if(c0 == 'N' && c1 == 'I'){
+        for(int i=0; i< atCommandResponse.getValueLength(); ++i){
+          const char x = atCommandResponse.getValue()[i];
+          Serial.print((char)(atCommandResponse.getValue()[i]));
+        }//for
+      } else {
+        for(int i=0; i< atCommandResponse.getValueLength(); ++i){
+          const unsigned char x = atCommandResponse.getValue()[i];
+          if(x < 0x10) Serial.print('0');
+          Serial.print((unsigned char)(atCommandResponse.getValue()[i]), HEX);
+        }//for
+      }//if
+    }//if
     Serial.print('\n');
-  }
-}
-
-
-void atNDPC1(){
-  const uint8_t ATND[] = {'N','D'};
-  const uint8_t PC1[] = {'P', 'C', '1', '\0'};
-  AtCommandRequest atCommandRequest = AtCommandRequest(ATND, PC1, 3);
-  AtCommandResponse atCommandResponse = AtCommandResponse();
-  xbee.send(atCommandRequest);
-  //Serial.print(" Sent \n");
-  if(xbee.readPacket(10000)){
-    //Serial.print(" Read \n");
-    if(xbee.getResponse().getApiId() == AT_COMMAND_RESPONSE) {
-      xbee.getResponse().getAtCommandResponse(atCommandResponse);
-      Serial.print((char)atCommandResponse.getCommand()[0]);
-      Serial.print((char)atCommandResponse.getCommand()[1]); 
-      Serial.print(' ');
-      for(int i=0; i< atCommandResponse.getValueLength(); ++i){
-        const unsigned char x = atCommandResponse.getValue()[i];
-        if(x < 0x10) Serial.print('0');
-        Serial.print((unsigned char)(atCommandResponse.getValue()[i]), HEX);
-      }//for
-    }
-    Serial.print('\n');
-  }  
+  }//if
+  return xbee.getResponse().isAvailable();
 }
 
 void setup() {
@@ -131,9 +93,13 @@ void loop() {
   Serial.print(pressure);
   Serial.print('\n');
   
-  atSH();
-  atSL();
-  atNI();
-  atNDPC1();
-  delay(10000);
+  sendATSH();
+  getResponse();
+  sendATSL();
+  getResponse();
+  sendATNI();
+  getResponse();
+  sendATNDPC1();
+  getResponse();
+  while(getResponse());
 }
