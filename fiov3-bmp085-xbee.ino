@@ -1,4 +1,5 @@
 #include <SoftwareSerial.h>
+#include <Wire.h>
 #include <Printers.h>
 #include <XBee.h>
 #include <avr/sleep.h>
@@ -110,12 +111,8 @@ void setup() {
   // put your setup code here, to run once:
   //Serial.begin(9600);
   Wire.begin();
-
+  initBmp085();
 }//setup
-
-
-//float temperature;
-//long pressure;
 
 void loop() {
   TXLED1;

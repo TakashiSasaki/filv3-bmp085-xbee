@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Wire.h>
 #include "bmp085.h"
 
 int ac1, ac2, ac3;
@@ -127,6 +128,7 @@ float readTemperature(){
   const long x2 = ((long)mc << 11)/(x1 + md);
   b5 = x1 + x2;
   const float temperature = ((b5+8) >> 4)/10.0;
+  Serial.print(temperature);
   return temperature;
 }//readTemperature
 
