@@ -5,9 +5,10 @@
 #include <avr/sleep.h>
 #include "bmp085.h"
 #include "morse.h"
+#include "xbees1.h"
 
 //Connecting pin 8 and 9 to TX and RX of USB serial device respectively.
-XBee xbee;
+//XBee xbee;
 
 bool PC1 = false;
 uint8_t PC1SH[4];
@@ -91,20 +92,20 @@ bool getResponse() {
           }
           ni[i + 1] = '\0';
 
-          if(strcmp("PC1", ni) == 0){
+          if (strcmp("PC1", ni) == 0) {
             PC1 = true;
             memcpy(PC1SH, sh, 4);
             memcpy(PC1SL, sl, 4);
-          } else if(strcmp("PC2", ni) == 0){
+          } else if (strcmp("PC2", ni) == 0) {
             PC2 = true;
             memcpy(PC2SH, sh, 4);
             memcpy(PC2SL, sl, 4);
           }//if
-          
+
           Serial.print(" (");
           Serial.print(ni);
           Serial.print(")");
-        
+
         }//if
       }
     }//if
@@ -112,6 +113,16 @@ bool getResponse() {
   }//if
   return xbee.getResponse().isAvailable();
 }
+
+void printHex(const uint8_t *p, int len) {
+  for (int i = 0; len > 0; --len, ++i) {
+    if(p[i] <0x10){
+      Serial.print('0');
+    }
+    Serial.print(p[i], HEX);
+  }
+}
+
 
 void setup() {
   Serial.begin(9600);
@@ -127,15 +138,15 @@ void setup() {
   delay(MORSE_SHORT_MSEC * 3);
   morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_S);  
+  morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 3);
   morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_S);  
+  morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 3);
   morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_S);  
+  morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 3);
 }//setup
 
@@ -146,16 +157,17 @@ void loop() {
   delay(MORSE_SHORT_MSEC * 7);
   morse_letter(MORSE_L);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_S);  
+  morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 7);
 
   delay(MORSE_SHORT_MSEC * 7);
   morse_letter(MORSE_T);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_S);  
+  morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 7);
 
   const float temperature = readTemperature();
+  sendData(PC1SH, PC1SL, "T", temperature);
   Serial.print("Temperature: ");
   Serial.print(temperature);
   Serial.print('\n');
@@ -163,13 +175,13 @@ void loop() {
   delay(MORSE_SHORT_MSEC * 7);
   morse_letter(MORSE_T);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_E);  
+  morse_letter(MORSE_E);
   delay(MORSE_SHORT_MSEC * 7);
 
   delay(MORSE_SHORT_MSEC * 7);
   morse_letter(MORSE_P);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_S);  
+  morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 7);
 
   const long pressure = readPressure();
@@ -180,13 +192,13 @@ void loop() {
   delay(MORSE_SHORT_MSEC * 7);
   morse_letter(MORSE_P);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_E);  
+  morse_letter(MORSE_E);
   delay(MORSE_SHORT_MSEC * 7);
 
   delay(MORSE_SHORT_MSEC * 7);
   morse_letter(MORSE_X);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_S);  
+  morse_letter(MORSE_S);
   delay(MORSE_SHORT_MSEC * 7);
 
   sendATSH();
@@ -202,24 +214,28 @@ void loop() {
   delay(MORSE_SHORT_MSEC * 7);
   morse_letter(MORSE_X);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_E);  
+  morse_letter(MORSE_E);
   delay(MORSE_SHORT_MSEC * 7);
 
-  if(PC1) {
-  delay(MORSE_SHORT_MSEC * 7);
-  morse_letter(MORSE_1);
-  delay(MORSE_SHORT_MSEC * 7);
+  if (PC1) {
+    Serial.print("PC1 ");
+    printHex(PC1SH, 4);
+    printHex(PC1SL, 4);
+    Serial.print('\n');
+    delay(MORSE_SHORT_MSEC * 7);
+    morse_letter(MORSE_1);
+    delay(MORSE_SHORT_MSEC * 7);
   }
 
-  if(PC2) {
-  delay(MORSE_SHORT_MSEC * 7);
-  morse_letter(MORSE_2);
-  delay(MORSE_SHORT_MSEC * 7);
+  if (PC2) {
+    delay(MORSE_SHORT_MSEC * 7);
+    morse_letter(MORSE_2);
+    delay(MORSE_SHORT_MSEC * 7);
   }
 
   delay(MORSE_SHORT_MSEC * 7);
   morse_letter(MORSE_L);
   delay(MORSE_SHORT_MSEC * 3);
-  morse_letter(MORSE_E);  
+  morse_letter(MORSE_E);
   delay(MORSE_SHORT_MSEC * 7);
 }
