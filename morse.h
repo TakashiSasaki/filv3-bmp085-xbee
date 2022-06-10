@@ -3,8 +3,8 @@
 
 #define RXLED 17
 
-#define MORSE_SHORT_MSEC 120
-#define MORSE_ADJ_MSEC 30
+#define MORSE_SHORT_MSEC 130
+#define MORSE_ADJ_MSEC 20
 
 #define MORSE_A  ".-"
 #define MORSE_B  "-..."

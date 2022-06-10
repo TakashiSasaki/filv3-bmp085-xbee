@@ -2,17 +2,17 @@
 #include "morse.h"
 
 void morse_short(){
-  TXLED0;
+  RXLED1;
+  RXLED0;
   delay(MORSE_SHORT_MSEC + MORSE_ADJ_MSEC);
-  TXLED1;
-  delay(MORSE_SHORT_MSEC - MORSE_ADJ_MSEC);
+  RXLED1;
 }
 
 void morse_long(){
-  TXLED0;
+  RXLED1;
+  RXLED0;
   delay(MORSE_SHORT_MSEC * 3 + MORSE_ADJ_MSEC);
-  TXLED1;
-  delay(MORSE_SHORT_MSEC - MORSE_ADJ_MSEC);
+  RXLED1;
 }
 
 void morse_letter(const char* p){
@@ -26,5 +26,6 @@ void morse_letter(const char* p){
         morse_long();
         break;
     }//switch
+    delay(MORSE_SHORT_MSEC - MORSE_ADJ_MSEC);
   }//while
 }//morse_letter
