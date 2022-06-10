@@ -9,6 +9,13 @@
 //Connecting pin 8 and 9 to TX and RX of USB serial device respectively.
 XBee xbee;
 
+bool PC1 = false;
+uint8_t PC1SH[4];
+uint8_t PC1SL[4];
+bool PC2 = false;
+uint8_t PC2SH[4];
+uint8_t PC2SL[4];
+
 void sendATSH() {
   const uint8_t ATSH[] = {'S', 'H'};
   AtCommandRequest atCommandRequest = AtCommandRequest(ATSH);
@@ -66,14 +73,14 @@ bool getResponse() {
           my[1] = atCommandResponse.getValue()[1];
           uint8_t sh[4];
           sh[0] = atCommandResponse.getValue()[2];
-          sh[0] = atCommandResponse.getValue()[3];
-          sh[0] = atCommandResponse.getValue()[4];
-          sh[0] = atCommandResponse.getValue()[5];
+          sh[1] = atCommandResponse.getValue()[3];
+          sh[2] = atCommandResponse.getValue()[4];
+          sh[3] = atCommandResponse.getValue()[5];
           uint8_t sl[4];
-          sh[0] = atCommandResponse.getValue()[6];
-          sh[0] = atCommandResponse.getValue()[7];
-          sh[0] = atCommandResponse.getValue()[8];
-          sh[0] = atCommandResponse.getValue()[9];
+          sl[0] = atCommandResponse.getValue()[6];
+          sl[1] = atCommandResponse.getValue()[7];
+          sl[2] = atCommandResponse.getValue()[8];
+          sl[3] = atCommandResponse.getValue()[9];
           const uint8_t db = atCommandResponse.getValue()[10];
 
           char ni[21];
@@ -83,9 +90,21 @@ bool getResponse() {
             ni[i] = atCommandResponse.getValue()[i + 10];
           }
           ni[i + 1] = '\0';
+
+          if(strcmp("PC1", ni) == 0){
+            PC1 = true;
+            memcpy(PC1SH, sh, 4);
+            memcpy(PC1SL, sl, 4);
+          } else if(strcmp("PC2", ni) == 0){
+            PC2 = true;
+            memcpy(PC2SH, sh, 4);
+            memcpy(PC2SL, sl, 4);
+          }//if
+          
           Serial.print(" (");
           Serial.print(ni);
           Serial.print(")");
+        
         }//if
       }
     }//if
@@ -185,6 +204,18 @@ void loop() {
   delay(MORSE_SHORT_MSEC * 3);
   morse_letter(MORSE_E);  
   delay(MORSE_SHORT_MSEC * 7);
+
+  if(PC1) {
+  delay(MORSE_SHORT_MSEC * 7);
+  morse_letter(MORSE_1);
+  delay(MORSE_SHORT_MSEC * 7);
+  }
+
+  if(PC2) {
+  delay(MORSE_SHORT_MSEC * 7);
+  morse_letter(MORSE_2);
+  delay(MORSE_SHORT_MSEC * 7);
+  }
 
   delay(MORSE_SHORT_MSEC * 7);
   morse_letter(MORSE_L);

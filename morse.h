@@ -32,6 +32,17 @@
 #define MORSE_X  "-..-"
 #define MORSE_Y  "-.--"
 #define MORSE_Z  "--.."
+#define MORSE_0  "-----"
+#define MORSE_1  ".----"
+#define MORSE_2  "..---"
+#define MORSE_3  "...--"
+#define MORSE_4  "....-"
+#define MORSE_5  "....."
+#define MORSE_6  "-...."
+#define MORSE_7  "--..."
+#define MORSE_8  "---.."
+#define MORSE_9  "----."
+
 
 void morse_letter(const char* p);
 
