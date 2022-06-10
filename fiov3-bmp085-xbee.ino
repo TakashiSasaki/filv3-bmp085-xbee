@@ -40,9 +40,20 @@ void sendATNDPC1() {
 bool getResponse() {
   if (xbee.readPacket(5000)) {
     //Serial.print(" Read \n");
-    if (xbee.getResponse().getApiId() == AT_COMMAND_RESPONSE) {
+    const uint8_t apiId  = xbee.getResponse().getApiId();
+    Serial.print("APIID ");
+    Serial.print(apiId, HEX);
+    Serial.print(" ");
+    if (apiId == AT_COMMAND_RESPONSE) {
       onAtCommandResponse();
-    }//if
+    } else if (apiId == TX_STATUS_RESPONSE) {
+      onTxStatusResponse();
+    } else if (apiId == ZB_TX_STATUS_RESPONSE) {
+      Serial.print("ZB_TX_STATUS_RESPONSE");
+    } else {
+      Serial.print("APID ");
+      Serial.print(apiId, HEX);
+    }
     Serial.print('\n');
   }//if
   return xbee.getResponse().isAvailable();
@@ -151,22 +162,25 @@ void loop() {
   morse_letter(MORSE_E);
   delay(MORSE_SHORT_MSEC * 7);
 
-  if (PC1) {
+  if (PC1 == true) {
     Serial.print("PC1 ");
     printHex(PC1SH, 4);
     printHex(PC1SL, 4);
     Serial.print('\n');
-    sendData(PC1SH, PC1SL, "T", temperature);
+    SendDigiMeshFloat(PC1SH, PC1SL, "T", temperature);
+    SendDigiMeshLong(PC1SH, PC1SL, "P", pressure);
     delay(MORSE_SHORT_MSEC * 7);
     morse_letter(MORSE_1);
     delay(MORSE_SHORT_MSEC * 7);
   }
 
-  if (PC2) {
+  if (PC2 == true) {
     Serial.print("PC2 ");
     printHex(PC2SH, 4);
     printHex(PC2SL, 4);
     Serial.print('\n');
+    SendDigiMeshFloat(PC1SH, PC2SL, "T", temperature);
+    SendDigiMeshLong(PC1SH, PC2SL, "P", pressure);
     delay(MORSE_SHORT_MSEC * 7);
     morse_letter(MORSE_2);
     delay(MORSE_SHORT_MSEC * 7);

@@ -10,9 +10,11 @@ extern "C" uint8_t PC2SH[4];
 extern "C" uint8_t PC2SL[4];
 
 
-void sendData(const uint8_t* dh, const uint8_t* sl, const char* tag, float f);
+void SendData(const uint8_t* dh, const uint8_t* sl, const char* tag, float f);
 void onAtCommandResponseND(const AtCommandResponse& atCommandResponse);
 void onAtCommandResponse();
-
+void onTxStatusResponse();
+void SendDigiMeshFloat(const uint8_t* dh, const uint8_t* sl, const char* tag, float f);
+void SendDigiMeshLong(const uint8_t* dh, const uint8_t* sl, const char* tag, long l);
 
 #endif

@@ -9,18 +9,85 @@ uint8_t PC1SL[4];
 bool PC2 = false;
 uint8_t PC2SH[4];
 uint8_t PC2SL[4];
+uint8_t NI[21];
 
-void sendData(const uint8_t* dh, const uint8_t* dl, const char* tag, float f) {
+void SendData(const uint8_t* dh, const uint8_t* dl, const char* tag, float f) {
   uint8_t buffer[100];
-  const int len = sprintf(buffer, "%s %f", tag, f);
+  uint8_t buffer2[100];
+  dtostrf(f, 6, 2, buffer2);
+  const int len = sprintf(buffer, "%s %s", tag, buffer2);
   //uint8_t dst_addr[8];
   //memcpy(dst_addr, dh, 4);
   //memcpy(dst_addr+4, dl, 4);
-  XBeeAddress64 xbeeAddress64 = XBeeAddress64(
-                                  (((unsigned long)dh[0]) << 24) | (((unsigned long)dh[1]) << 16) | (((unsigned long)dh[2]) << 8) | (unsigned long)dh[3],
-                                  (((unsigned long)dl[0]) << 24) | (((unsigned long)dl[1]) << 16) | (((unsigned long)dl[2]) << 8) | (unsigned long)dl[3]);
-  Tx64Request tx64Request(xbeeAddress64, buffer, len);
-  xbee.send(tx64Request);
+  const uint32_t addr_high = (((uint32_t)dh[0]) << 24) | (((uint32_t)dh[1]) << 16) | (((uint32_t)dh[2]) << 8) | (uint32_t)dh[3];
+  Serial.print("ADDR_HIGH :");
+  Serial.print(addr_high, HEX);
+  Serial.print('\n');
+  const uint32_t addr_low = (((uint32_t)dl[0]) << 24) | (((uint32_t) dl[1]) << 16) | (((uint32_t)dl[2]) << 8) | (uint32_t)dl[3];
+  Serial.print("ADDR_LOW  :");
+  Serial.print(addr_low, HEX);
+  Serial.print('\n');
+  const uint16_t addr_16 = (((uint16_t)dl[2]) << 8) | (uint16_t)dl[3];
+
+  XBeeAddress64 xbeeAddress64 = XBeeAddress64(addr_high, addr_low);
+  Tx64Request tx64Request(xbeeAddress64, buffer, strlen(buffer));
+  //Tx16Request tx16Request(addr_16, buffer, strlen(buffer));
+  //xbee.send(tx64Request);
+  //xbee.send(tx16Request);
+  ZBTxRequest zbTxRequest = ZBTxRequest(xbeeAddress64, buffer, strlen(buffer));
+  xbee.send(zbTxRequest);
+  delay(1000);
+  Serial.print("SENT ");
+  Serial.print((char*)buffer);
+  Serial.print('\n');
+}//sendData
+
+void SendDigiMeshData(const uint8_t* dh, const uint8_t* dl, const uint8_t * buffer, int len) {
+  uint8_t checksum = 0;
+  Serial1.write('\x7E');
+  Serial1.write(0);
+  Serial1.write(len + 14);
+  Serial1.write(0x10); checksum += 0x10;
+  Serial1.write(0x01); checksum += 0x01;
+  Serial1.write(dh[0]); checksum += dh[0];
+  Serial1.write(dh[1]); checksum += dh[1];
+  Serial1.write(dh[2]); checksum += dh[2];
+  Serial1.write(dh[3]); checksum += dh[3];
+  Serial1.write(dl[0]); checksum += dl[0];
+  Serial1.write(dl[1]); checksum += dl[1];
+  Serial1.write(dl[2]); checksum += dl[2];
+  Serial1.write(dl[3]); checksum += dl[3];
+  Serial1.write(0xFF); checksum += 0xFF;
+  Serial1.write(0xFE); checksum += 0xFE;
+  Serial1.write(0x00); //Broadcast Radius
+  Serial1.write(0x00); //Options
+  Serial1.write((char*)buffer);
+  for (int i = 0; i < len; ++i) {
+    checksum += buffer[i]; //RF Data
+  }
+  Serial1.write(0xFF - checksum);
+  //Serial.write("SendDigiMeshData\n");
+}//SendDigiMeshData
+
+void SendDigiMeshLong(const uint8_t* dh, const uint8_t* dl, const char* tag, long l) {
+  uint8_t buffer[100];
+  const int len = sprintf(buffer, "%s %s %ld", NI, tag, l);
+  SendDigiMeshData(dh, dl, buffer, len);
+}
+
+void SendDigiMeshFloat(const uint8_t* dh, const uint8_t* dl, const char* tag, float f) {
+  uint8_t buffer[100];
+  uint8_t buffer2[100];
+  dtostrf(f, 6, 2, buffer2);
+  const int len = sprintf(buffer, "%s %s %s", NI, tag, buffer2);
+  SendDigiMeshData(dh, dl, buffer, len);
+}
+
+void onTxStatusResponse() {
+  TxStatusResponse txStatusResponse = TxStatusResponse();
+  xbee.getResponse().getTxStatusResponse(txStatusResponse);
+  Serial.print("TX ");
+  Serial.print(txStatusResponse.getStatus() == SUCCESS ? "OK" : "NG");
 }
 
 void onAtCommandResponse() {
@@ -32,10 +99,13 @@ void onAtCommandResponse() {
   Serial.print(c1);
   Serial.print(' ');
   if (c0 == 'N' && c1 == 'I') {
-    for (int i = 0; i < atCommandResponse.getValueLength(); ++i) {
+    int i = 0;
+    for (; i < atCommandResponse.getValueLength(); ++i) {
       const char x = atCommandResponse.getValue()[i];
+      NI[i] = x;
       Serial.print((char)(atCommandResponse.getValue()[i]));
     }//for
+    NI[i] = '\0';
   } else {
     for (int i = 0; i < atCommandResponse.getValueLength(); ++i) {
       const unsigned char x = atCommandResponse.getValue()[i];
@@ -46,7 +116,6 @@ void onAtCommandResponse() {
       onAtCommandResponseND(atCommandResponse);
     }
   }//if
-
 }
 
 void onAtCommandResponseND(const AtCommandResponse& atCommandResponse) {
@@ -72,7 +141,7 @@ void onAtCommandResponseND(const AtCommandResponse& atCommandResponse) {
     for (i = 0; i < ni_len; ++i) {
       ni[i] = atCommandResponse.getValue()[i + 10];
     }//for
-    ni[i + 1] = '\0';
+    ni[i] = '\0';
 
     if (strcmp("PC1", ni) == 0) {
       PC1 = true;
